@@ -1,0 +1,54 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+
+      - name: Run tests
+        run: |
+          python -m pytest evals/level1/ -v --tb=short --strict-markers
+
+      - name: Check test count
+        run: |
+          COUNT=$(python -m pytest evals/level1/ --collect-only -q 2>&1 | tail -1 | grep -oE '[0-9]+' | head -1)
+          echo "Total tests collected: $COUNT"
+          if [ "$COUNT" -lt 1300 ]; then
+            echo "::error::Test count dropped below 1300 (current: $COUNT)"
+            exit 1
+          fi
+
+      - name: Verify project structure
+        run: |
+          test -d src/common || (echo "src/common/ missing" && exit 1)
+          test -d src/pillar0 || (echo "src/pillar0/ missing" && exit 1)
+          test -d src/pillar7 || (echo "src/pillar7/ missing" && exit 1)
+          test -f README.md || (echo "README.md missing" && exit 1)
+          test -f LICENSE || (echo "LICENSE missing" && exit 1)
+          test -f CLAUDE.md || (echo "CLAUDE.md missing" && exit 1)
+          echo "Project structure OK"

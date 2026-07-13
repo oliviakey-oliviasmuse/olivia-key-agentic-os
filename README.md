@@ -6,6 +6,7 @@
 **Deterministic gates. Eval-first. Zero subjective language.**
 
 [![Tests](https://img.shields.io/badge/tests-1315%20passing-4CAF50?logo=pytest&logoColor=white)](evals/level1/)
+[![CI](https://github.com/oliviakey-oliviasmuse/olivia-key-agentic-os/actions/workflows/tests.yml/badge.svg)](https://github.com/oliviakey-oliviasmuse/olivia-key-agentic-os/actions/workflows/tests.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![Methodology](https://img.shields.io/badge/methodology-LSS%20%7C%20PRINCE2%20%7C%20CoPQ-0055A4)](docs/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-22c55e)](LICENSE)

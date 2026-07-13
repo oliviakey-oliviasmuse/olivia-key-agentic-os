@@ -1,0 +1,95 @@
+name: Verify Publish Readiness
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: "pip"
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Check essential files
+        run: |
+          MISSING=0
+          for f in README.md LICENSE CLAUDE.md CHANGELOG.md pyproject.toml requirements.txt .gitignore conftest.py; do
+            if [ ! -f "$f" ]; then
+              echo "::error::Missing required file: $f"
+              MISSING=$((MISSING + 1))
+            fi
+          done
+          if [ $MISSING -gt 0 ]; then
+            echo "::error::$MISSING required files missing"
+            exit 1
+          fi
+          echo "All essential files present"
+
+      - name: Check pillar coverage
+        run: |
+          MISSING=0
+          for i in 0 1 2 3 4 5 6 7; do
+            if [ ! -d "src/pillar$i" ]; then
+              echo "::error::Missing pillar: src/pillar$i/"
+              MISSING=$((MISSING + 1))
+            fi
+            if [ ! -d "evals/level1/pillar$i" ]; then
+              echo "::error::Missing tests: evals/level1/pillar$i/"
+              MISSING=$((MISSING + 1))
+            fi
+            if [ ! -d "docs/pillar$i" ]; then
+              echo "::warning::Missing docs: docs/pillar$i/ (non-blocking)"
+            fi
+          done
+          if [ $MISSING -gt 0 ]; then
+            echo "::error::$MISSING required pillar directories missing"
+            exit 1
+          fi
+          echo "All 8 pillars present"
+
+      - name: Check common module
+        run: |
+          for f in trace.py defect_codes.py fmea.py andon.py __init__.py; do
+            if [ ! -f "src/common/$f" ]; then
+              echo "::error::Missing common module file: src/common/$f"
+              exit 1
+            fi
+          done
+          echo "src/common/ module complete"
+
+      - name: Check test count per pillar
+        run: |
+          python -m pytest evals/level1/ --collect-only -q 2>&1 | tail -1
+          TOTAL=$(python -m pytest evals/level1/ --collect-only -q 2>&1 | tail -1 | grep -oE '[0-9]+' | head -1)
+          echo "Total tests: $TOTAL"
+          if [ "$TOTAL" -lt 1300 ]; then
+            echo "::error::Test count below 1300 threshold"
+            exit 1
+          fi
+
+      - name: Verify P0 cross-pillar import patterns
+        run: |
+          # Check that cross-pillar imports are consistent
+          for f in src/pillar2/content_gate.py src/pillar3/gatekeeper.py src/pillar3/proposal_builder.py src/pillar6/invoicing.py; do
+            if [ -f "$f" ]; then
+              echo "Checking $f..."
+              if grep -qE "from\s+src\.pillar0\.[a-z_]+_generator" "$f"; then
+                echo "  OK: uses src.pillar0.X_generator (correct cross-pillar pattern)"
+              else
+                echo "  WARNING: $f does not use the expected cross-pillar import pattern"
+              fi
+            fi
+          done

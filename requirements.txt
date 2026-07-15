@@ -1,10 +1,13 @@
 # Runtime dependencies
-# Most pillars use Python stdlib only.
-# Pillar 1 (agent_runner.py) requires anthropic for the LLM-facing layer.
-# If you only run the deterministic tests, you don't need this — the
-# try/except ImportError pattern in each pillar's LLM wrapper means
-# tests pass without it.
-anthropic>=0.40.0  ; extra == "llm"
+#
+# Most pillars use Python stdlib only. Two pillars have runtime deps:
+#   - Pillar 0: PyYAML for to_yaml()/from_yaml() in ICP/positioning/menu/distribution/memory
+#   - Pillar 1: anthropic for the LLM-facing agent_runner (optional via try/except)
+#
+# If you only run the deterministic tests, anthropic is not strictly required.
+# PyYAML IS required because Pillar 0 test files import it at module load time.
+PyYAML>=6.0.1
+anthropic>=0.40.0
 
 # Development / testing
 pytest>=7.4.0
